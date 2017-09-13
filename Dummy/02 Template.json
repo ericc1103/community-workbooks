@@ -1,0 +1,20 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## New workbook\r\n---\r\n\r\nWelcome to your new workbook.  This area will display text formatted as markdown.\r\n\r\n\r\nWe've included a basic analytics query to get you started. Use the `Edit` button below each section to configure it or add more sections."
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "union customEvents, dependencies, exceptions, pageViews, requests, traces\n| where timestamp > ago(1d)\n| summarize count() by itemType\n| render barchart",
+        "showQuery": false,
+        "size": 1
+      }
+    }
+  ]
+}
