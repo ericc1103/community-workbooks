@@ -1,0 +1,138 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# Word vs. Share Icon in the Segmentation Hero Chart\n---\n# Hypothesis\nUsing the Word icon instead of the generics share icon will lead to more users discovering and using the export to 'Word' feature.\n"
+      }
+    },
+    {
+      "type": 8,
+      "content": {
+        "version": "KqlParams/1.0",
+        "params": [
+          {
+            "name": "TimeRange",
+            "value": "30d",
+            "description": "Time range"
+          },
+          {
+            "name": "ViewEvents",
+            "value": "'Usage Segmentation Report Loaded'",
+            "description": "Events that views in your app"
+          },
+          {
+            "name": "ConversionEvents",
+            "value": "'Share Context Menu Clicked', 'Usage Share Toolbar Button Clicked'",
+            "description": "Events that represent conversions in your app"
+          },
+          {
+            "name": "FlightDimension",
+            "value": "Flight_usageShowWordOnChartToolbar",
+            "description": "Dimension used to differentiate differentiate test groups"
+          },
+          {
+            "name": "ExcludedFlights",
+            "value": "'ShowNothingOnChartToolbar'",
+            "description": "Filter out unneeded flights. Used to ensure only two flights in an A/B test"
+          }
+        ]
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "# Session Conversions\nCounts the rate at which sessions are converted.  For a session to be considered as converted, \n1. Both the view and conversion event needs to happen in the same session\n2. The View event needs to happen prior to the Conversion event.\n\n## Conversion Rate by Flight (%)"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let timeRange = {TimeRange};\nlet viewEvent = union customEvents, pageViews\n| where timestamp > ago(timeRange)\n| where name in ({ViewEvents})\n| extend Flight = tostring(customDimensions['{FlightDimension}'])\n| where Flight !in ({ExcludedFlights}, '')\n| summarize ViewTimestamp = min(timestamp) by session_Id, Flight;\nlet conversionEvent = union customEvents, pageViews\n| where timestamp > ago(timeRange)\n| where name in ({ConversionEvents})\n| summarize ConversionTimestamp = max(timestamp) by session_Id;\nviewEvent\n| join kind= leftouter (\n    conversionEvent\n) on session_Id\n| where session_Id1 == '' or ViewTimestamp < ConversionTimestamp\n| summarize Views = count(), Conversions = countif(session_Id1 != '') by Flight\n| extend ConversionRate = 100.0 * Conversions / Views\n| project Flight, [\"Conversion Rate\"] = ConversionRate",
+        "showQuery": false,
+        "size": 0,
+        "visualization": "barchart"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Results of the experiment\n"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let timeRange = {TimeRange};\r\nlet viewEvent = union customEvents, pageViews\r\n| where timestamp > ago(timeRange)\r\n| where name in ({ViewEvents})\r\n| extend Flight = tostring(customDimensions['{FlightDimension}'])\r\n| where Flight !in ({ExcludedFlights}, '')\r\n| summarize ViewTimestamp = min(timestamp) by session_Id, Flight;\r\nlet conversionEvent = union customEvents, pageViews\r\n| where timestamp > ago(timeRange)\r\n| where name in ({ConversionEvents})\r\n| summarize ConversionTimestamp = max(timestamp) by session_Id;\r\nlet Conversions = materialize(viewEvent\r\n| join kind= leftouter (\r\n    conversionEvent\r\n) on session_Id\r\n| where session_Id1 == '' or ViewTimestamp < ConversionTimestamp\r\n| summarize Views = count(), Conversions = countif(session_Id1 != '') by Flight\r\n| extend ConversionRate = 1.0 * Conversions / Views\r\n| extend StandardError = ConversionRate * (1 - ConversionRate) / Views\r\n| extend LowerRange95 = ConversionRate - StandardError * 1.96\r\n| extend UpperRange95 = ConversionRate + StandardError * 1.96\r\n| extend LowerRange80 = ConversionRate - StandardError * 1.28\r\n| extend UpperRange80 = ConversionRate + StandardError * 1.28\r\n| extend jkey = 1\r\n| serialize id = row_number());\r\nConversions\r\n| join kind = inner (Conversions) on jkey\r\n| where Flight != Flight1\r\n//| where id < id1\r\n| extend Result80 = iff((LowerRange80 <= UpperRange801 and LowerRange801 <= UpperRange80) or (LowerRange801 <= UpperRange80 and LowerRange80 <= UpperRange801), \"Inconclusive\", iff(ConversionRate > ConversionRate1, '🏆 Winner', ''))\r\n| extend Result95 = iff((LowerRange95 <= UpperRange951 and LowerRange951 <= UpperRange95) or (LowerRange951 <= UpperRange95 and LowerRange95 <= UpperRange951), \"Inconclusive\", iff(ConversionRate > ConversionRate1, '🏆 Winner', ''))\r\n| project Flight, Views, Conversions, [\"Conversion Rate (%)\"] = ConversionRate * 100, [\"Result (95% Confidence)\"] = Result95, [\"Result (80% Confidence)\"] = Result80  ",
+        "showQuery": false,
+        "size": 0
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "The results column indicate if the one of the flights conclusively results in a better conversion rate for the experiment than the other one. Confidence percentage indicates the certainty with which the results can be trusted (e.g. 95% is more trustworthy than 80% confidence).\n\n> Winner: this flight has a conclusively better conversion rate than the other one.\n\n> Blank: this flight has a conclusively worse conversion rate than the other one.\n\n> Inconclusive: cannot conclusively determine which flight had a better conversion."
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "# User Conversions\nMeasures the rate at which users are converted.  For a user to be considered as converted, \n1. They need to have done both the view and conversion events within the time period.\n2. The View event needs to happen prior to the Conversion event.\n\n### Select User Id property\nUse the parameter below to select the property/column that has your apps unique user ids. By default, we use the anonymous user ids that is auto-collected by the Application Insights SDKs. If you app collects authenticated user ids, then you should change the property below to 'user_AuthenticatedId'."
+      }
+    },
+    {
+      "type": 8,
+      "content": {
+        "version": "KqlParams/1.0",
+        "params": [
+          {
+            "name": "UserIdProperty",
+            "value": "user_Id",
+            "description": "Indicates the column to be used for determining unique user ids. If you app collect authenticated user ids, then use user_AuthenticatedId here."
+          }
+        ]
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Conversion Rate by Flight (%)"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let timeRange = {TimeRange};\nlet viewEvent = union customEvents, pageViews\n| where timestamp > ago(timeRange)\n| where name in ({ViewEvents})\n| extend Flight = tostring(customDimensions['{FlightDimension}'])\n| where Flight !in ({ExcludedFlights}, '')\n| summarize ViewTimestamp = min(timestamp) by {UserIdProperty}, Flight;\nlet conversionEvent = union customEvents, pageViews\n| where timestamp > ago(timeRange)\n| where name in ({ConversionEvents})\n| summarize ConversionTimestamp = max(timestamp) by {UserIdProperty};\nviewEvent\n| join kind= leftouter (\n    conversionEvent\n) on user_Id\n| where {UserIdProperty}1 == '' or ViewTimestamp < ConversionTimestamp\n| summarize Views = count(), Conversions = countif({UserIdProperty}1 != '') by Flight\n| extend ConversionRate = 100.0 * Conversions / Views\n| project Flight, [\"Conversion Rate\"] = ConversionRate",
+        "showQuery": false,
+        "size": 0,
+        "visualization": "barchart"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Details"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let timeRange = {TimeRange};\nlet viewEvent = union customEvents, pageViews\n| where timestamp > ago(timeRange)\n| where name in ({ViewEvents})\n| extend Flight = tostring(customDimensions['{FlightDimension}'])\n| where Flight !in ({ExcludedFlights}, '')\n| summarize ViewTimestamp = min(timestamp) by {UserIdProperty}, Flight;\nlet conversionEvent = union customEvents, pageViews\n| where timestamp > ago(timeRange)\n| where name in ({ConversionEvents})\n| summarize ConversionTimestamp = max(timestamp) by {UserIdProperty};\nlet Conversions = materialize(viewEvent\n| join kind= leftouter (\n    conversionEvent\n) on user_Id\n| where {UserIdProperty}1 == '' or ViewTimestamp < ConversionTimestamp\n| summarize Views = count(), Conversions = countif({UserIdProperty}1 != '') by Flight\n| extend ConversionRate = 1.0 * Conversions / Views\n| extend StandardError = ConversionRate * (1 - ConversionRate) / Views\n| extend LowerRange95 = ConversionRate - StandardError * 1.96\n| extend UpperRange95 = ConversionRate + StandardError * 1.96\n| extend LowerRange80 = ConversionRate - StandardError * 1.28\n| extend UpperRange80 = ConversionRate + StandardError * 1.28\n| extend jkey = 1\n| serialize id = row_number());\nConversions\n| join kind = inner (Conversions) on jkey\n| where Flight != Flight1\n//| where id < id1\n| extend Result80 = iff((LowerRange80 <= UpperRange801 and LowerRange801 <= UpperRange80) or (LowerRange801 <= UpperRange80 and LowerRange80 <= UpperRange801), \"Inconclusive\", iff(ConversionRate > ConversionRate1, '🏆 Winner', ''))\n| extend Result95 = iff((LowerRange95 <= UpperRange951 and LowerRange951 <= UpperRange95) or (LowerRange951 <= UpperRange95 and LowerRange95 <= UpperRange951), \"Inconclusive\", iff(ConversionRate > ConversionRate1, '🏆 Winner', ''))\n| project Flight, Views, Conversions, [\"Conversion Rate (%)\"] = ConversionRate * 100, [\"Result (95% Confidence)\"] = Result95, [\"Result (80% Confidence)\"] = Result80  ",
+        "showQuery": false,
+        "size": 0,
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "The results column indicate if the one of the flights conclusively results in a better conversion rate for the experiment than the other one. Confidence percentage indicates the certainty with which the results can be trusted (e.g. 95% is more trustworthy than 80% confidence).\n\n> Winner: this flight has a conclusively better conversion rate than the other one.\n\n> Blank: this flight has a conclusively worse conversion rate than the other one.\n\n> Inconclusive: cannot conclusively determine which flight had a better conversion."
+      }
+    }
+  ]
+}
