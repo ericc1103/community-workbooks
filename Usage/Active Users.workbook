@@ -4,23 +4,42 @@
     {
       "type": 1,
       "content": {
-        "json": "# Active Users\n---\n"
+        "json": "# Active Users\n\nHow many users does your app have? And how engaged are they? This workbook analyzes:\n* Daily, weekly, and monthly active user counts\n* Stickiness rates, which are useful indicators for how engaging your users find your app.\n"
       }
     },
     {
-      "type": 8,
+      "type": 9,
       "content": {
-        "version": "KqlParams/1.0",
-        "params": [
+        "version": "KqlParameterItem/1.0",
+        "query": "",
+        "crossComponentResources": [],
+        "parameters": [
           {
+            "id": "25a6fdc1-ae28-4886-9a5c-90254deb6a3d",
+            "version": "KqlParameterItem/1.0",
             "name": "Activities",
-            "value": "'*'",
-            "description": "A comma separated set of Page views or Events that are to be counted as activities. Or user '*' to include all events."
+            "type": 1,
+            "description": "A comma separated set of Page views or Events that are to be counted as activities. Or user '*' to include all events.",
+            "isRequired": true,
+            "value": "'*'"
           },
           {
+            "id": "36af7e49-a2ee-44fa-b91a-4de2e932abcd",
+            "version": "KqlParameterItem/1.0",
             "name": "TimeRange",
-            "value": "60d",
-            "description": "Time range to see in the charts"
+            "type": 1,
+            "description": "Time range to see in the charts",
+            "isRequired": true,
+            "value": "30d"
+          },
+          {
+            "id": "0895f8b5-90e5-461f-985c-4683bc9e08af",
+            "version": "KqlParameterItem/1.0",
+            "name": "MonthDefinition",
+            "type": 1,
+            "description": null,
+            "isRequired": true,
+            "value": "28d"
           }
         ]
       }
@@ -28,7 +47,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## Daily Active Users (DAU)\nDAU is the number of daily users of your app."
+        "json": "## Daily Active Users (DAU)\nTo customize what custom events and page views qualify as \"active usage,\" edit the `Activities` parameter above."
       }
     },
     {
@@ -44,14 +63,14 @@
     {
       "type": 1,
       "content": {
-        "json": "## Monthly Active Users (MAU)\nMAU tracks the users who used you app at least once in the previous 30 days."
+        "json": "## Monthly Active Users (MAU)\nMAU counts how many users used your app at least once in the previous 30 days. To customize what custom events and page views qualify as \"active usage,\" edit the `Activities` parameter above."
       }
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let month = 30d;\r\nlet outerWindow = now() - {TimeRange} - month;\r\nunion customEvents, pageViews\r\n| where timestamp >= outerWindow\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, outerWindow, now(), 1d, month)\r\n| project timestamp, MAU=dcount_activities_outer\r\n| where timestamp >= ago({TimeRange})\r\n| render timechart ",
+        "query": "let month = {MonthDefinition};\r\nlet outerWindow = now() - {TimeRange} - month;\r\nunion customEvents, pageViews\r\n| where timestamp >= outerWindow\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, outerWindow, now(), 1d, month)\r\n| project timestamp, MAU=dcount_activities_outer\r\n| where timestamp >= ago({TimeRange})\r\n| render timechart ",
         "showQuery": false,
         "size": 0,
         "visualization": "timechart"
@@ -60,14 +79,14 @@
     {
       "type": 1,
       "content": {
-        "json": "## Stickiness (DAU/MAU Ratio)\nStickiness or the ratio of Daily Active Users to Monthly Active Users is an interesting measure of the retention of your app. For example, a Stickiness ratio of 50% means that the average user of your app uses it  15 out of 30 days that month.\n"
+        "json": "## Stickiness (DAU/MAU Ratio)\nStickiness -- the ratio of daily to monthly active users -- is a useful measure of engagement for your app. For example, a stickiness ratio of 50% means that the average user of your app uses it 15 out of 30 days in a month.\n"
       }
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let month = 30d;\r\nlet outerWindow = now() - {TimeRange} - month;\r\nunion customEvents, pageViews\r\n| where timestamp >= outerWindow\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, outerWindow, now(), 1d, 30d)\r\n| project timestamp, MAU=activity_ratio * 100\r\n| where timestamp >= ago({TimeRange})\r\n| render timechart ",
+        "query": "let month = {MonthDefinition};\r\nlet outerWindow = now() - {TimeRange} - month;\r\nunion customEvents, pageViews\r\n| where timestamp >= outerWindow\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, outerWindow, now(), 1d, 30d)\r\n| project timestamp, MAU=activity_ratio * 100\r\n| where timestamp >= ago({TimeRange})\r\n| render timechart ",
         "showQuery": false,
         "size": 0,
         "visualization": "timechart"
@@ -76,7 +95,7 @@
     {
       "type": 1,
       "content": {
-        "json": "## Weekly Active Users (WAU)\nWAU trackes users who used you app at least once in the previous 7 days."
+        "json": "## Weekly Active Users (WAU)\n"
       }
     },
     {
