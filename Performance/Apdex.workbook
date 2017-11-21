@@ -38,7 +38,7 @@
           {
             "id": "07a9044c-0e5d-40f2-b815-b002fdcf5220",
             "version": "KqlParameterItem/1.0",
-            "name": "Name",
+            "name": "Operations",
             "type": 1,
             "description": "Comma seperated list of items to include in Apdex calculations. example: 'RequestA', 'RequestB', 'PageViewC'. Use '*' to include all",
             "isRequired": true,
@@ -60,7 +60,18 @@
             "type": 1,
             "description": null,
             "isRequired": false,
-            "query": "{Type}\n| where timestamp {TimeRange}\n| where name in ({Name}) or '*' in ({Name})\n| summarize SumOfDuration =  sum(duration), CountOfDuration = count()\n| project AverageDuration = round(iff(CountOfDuration == 0, 0.0, 1.0 * SumOfDuration / CountOfDuration))\n"
+            "query": "{Type}\n| where timestamp {TimeRange}\n| where name in ({Operations}) or '*' in ({Operations})\n| summarize SumOfDuration =  sum(duration), CountOfDuration = count()\n| project AverageDuration = round(iff(CountOfDuration == 0, 0.0, 1.0 * SumOfDuration / CountOfDuration))\n"
+          },
+          {
+            "id": "17ac059b-c7b6-498c-81b8-23c3213f38ee",
+            "version": "KqlParameterItem/1.0",
+            "name": "Calculations",
+            "type": 2,
+            "description": null,
+            "isRequired": true,
+            "multiSelect": null,
+            "query": "datatable(x: string, y: string) [\r\n'ConsiderFailures', 'Consider failures as frustrating', \r\n'DoNotConsiderFailures', 'Do not consider failures as frustrating'\r\n]",
+            "value": "ConsiderFailures"
           }
         ]
       }
@@ -81,7 +92,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let apdexThreshhold = iff('{ApdexThresholdInMilliseconds}' == '', {AverageDuration}, toint('{ApdexThresholdInMilliseconds}'));\n{Type}\n| where timestamp {TimeRange}\n| where name in ({Name}) or '*' in ({Name})\n| summarize AverageDuration = avg(duration) by user_Id, bin(timestamp, 1d)\n| extend UserExperience = case(AverageDuration <= apdexThreshhold, 'Satisfied', AverageDuration <= 4 * apdexThreshhold, 'Tolerating', 'Frustrated')\n| summarize Satisfied = countif(UserExperience == 'Satisfied'), Tolerating = countif(UserExperience == 'Tolerating'), Total = count() by timestamp\n| project timestamp, ApdexScore = (Satisfied + (Tolerating / 2.0)) / Total\n",
+        "query": "let apdexThreshhold = iff('{ApdexThresholdInMilliseconds}' == '', {AverageDuration}, toint('{ApdexThresholdInMilliseconds}'));\nlet failureThreshhold = 1;\n{Type}\n| where timestamp {TimeRange}\n| where name in ({Operations}) or '*' in ({Operations})\n| extend success = columnifexists('success', true)\n| extend Failure = iff('{Calculations}' == 'ConsiderFailures' and success == false, 1, 0)\n| summarize AverageDuration = avg(duration), Failures = sum(Failure) by user_Id, bin(timestamp, 1d)\n| extend UserExperience = case(AverageDuration <= apdexThreshhold, 'Satisfied', AverageDuration <= 4 * apdexThreshhold, 'Tolerating', 'Frustrated')\n| extend UserExperience = case(Failures >= failureThreshhold, \"Frustrated\", UserExperience)\n| summarize Satisfied = countif(UserExperience == 'Satisfied'), Tolerating = countif(UserExperience == 'Tolerating'), Total = count() by timestamp\n| project timestamp, ApdexScore = (Satisfied + (Tolerating / 2.0)) / Total\n",
         "showQuery": false,
         "size": 0,
         "aggregation": 5,
@@ -105,7 +116,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let apdexThreshhold = iff('{ApdexThresholdInMilliseconds}' == '', {AverageDuration}, toint('{ApdexThresholdInMilliseconds}'));\n{Type}\n| where timestamp {TimeRange}\n| where name in ({Name}) or '*' in ({Name})\n| summarize AverageDuration = avg(duration) by user_Id\n| extend UserExperience = case(AverageDuration <= apdexThreshhold, 'Satisfied', AverageDuration <= 4 * apdexThreshhold, 'Tolerating', 'Frustrated')\n| summarize Satisfied = countif(UserExperience == 'Satisfied'), Tolerating = countif(UserExperience == 'Tolerating'), Frustrated = countif(UserExperience == 'Frustrated'), Total = count()\n| project [\"Satisfied Users\"] = Satisfied, [\"Tolerating Users\"] = Tolerating, [\"Frustrated Users\"] = Frustrated, [\" Apdex Score\"] = (Satisfied + (Tolerating / 2.0)) / Total\n",
+        "query": "let apdexThreshhold = iff('{ApdexThresholdInMilliseconds}' == '', {AverageDuration}, toint('{ApdexThresholdInMilliseconds}'));\n{Type}\n| where timestamp {TimeRange}\n| where name in ({Operations}) or '*' in ({Operations})\n| extend success = columnifexists('success', true)\n| extend Failure = iff('{Calculations}' == 'ConsiderFailures' and success == false, 1, 0)\n| summarize AverageDuration = avg(duration), Failures = sum(Failure) by user_Id\n| extend UserExperience = case(AverageDuration <= apdexThreshhold, 'Satisfied', AverageDuration <= 4 * apdexThreshhold, 'Tolerating', 'Frustrated')\n| extend UserExperience = case(Failures > 0, \"Frustrated\", UserExperience)\n| summarize Satisfied = countif(UserExperience == 'Satisfied'), Tolerating = countif(UserExperience == 'Tolerating'), Frustrated = countif(UserExperience == 'Frustrated'), Total = count()\n| project [\"Satisfied Users\"] = Satisfied, [\"Tolerating Users\"] = Tolerating, [\"Frustrated Users\"] = Frustrated, [\" Apdex Score\"] = (Satisfied + (Tolerating / 2.0)) / Total\n",
         "showQuery": false,
         "size": 0,
         "aggregation": 0,
@@ -123,7 +134,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let apdexThreshhold = iff('{ApdexThresholdInMilliseconds}' == '', {AverageDuration}, toint('{ApdexThresholdInMilliseconds}'));\n{Type}\n| where timestamp {TimeRange}\n| where name in ({Name}) or '*' in ({Name})\n| summarize AverageDuration = avg(duration) by user_Id, bin(timestamp, 1d)\n| extend UserExperience = case(AverageDuration <= apdexThreshhold, 'Satisfied', AverageDuration <= 4 * apdexThreshhold, 'Tolerating', 'Frustrated')\n| summarize count() by UserExperience, timestamp",
+        "query": "let apdexThreshhold = iff('{ApdexThresholdInMilliseconds}' == '', {AverageDuration}, toint('{ApdexThresholdInMilliseconds}'));\nlet failureThreshhold = 1;\n{Type}\n| where timestamp {TimeRange}\n| where name in ({Operations}) or '*' in ({Operations})\n| extend success = columnifexists('success', true)\n| extend Failure = iff('{Calculations}' == 'ConsiderFailures' and success == false, 1, 0)\n| summarize AverageDuration = avg(duration), Failures = sum(Failure) by user_Id, bin(timestamp, 1d)\n| extend UserExperience = case(AverageDuration <= apdexThreshhold, 'Satisfied', AverageDuration <= 4 * apdexThreshhold, 'Tolerating', 'Frustrated')\n| extend UserExperience = case(Failures >= failureThreshhold, \"Frustrated\", UserExperience)\n| summarize count() by UserExperience, timestamp",
         "showQuery": false,
         "size": 0,
         "aggregation": 5,
@@ -162,7 +173,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let apdexThreshhold = iff('{ApdexThresholdInMilliseconds}' == '', {AverageDuration}, toint('{ApdexThresholdInMilliseconds}'));\n{Type}\n| where timestamp {TimeRange}\n| where name in ({Name}) or '*' in ({Name})\n| summarize AverageDuration = avg(duration) by user_Id, name\n| extend UserExperience = case(AverageDuration <= apdexThreshhold, 'S', AverageDuration <= 4 * apdexThreshhold, 'T', 'F')\n| summarize count() by UserExperience, name\n| summarize Satisfied = sumif(count_, UserExperience == 'S'), Tolerating = sumif(count_, UserExperience == 'T'), Frustrated = sumif(count_, UserExperience == 'F'), Total = sum(count_) by name\n| extend ApdexScore = (Satisfied + (Tolerating / 2.0)) / Total\n| extend Relevance = iff(ApdexScore == 0, 1.0 * Total * Total, Total / ApdexScore)\n| order by {SortBy}, name asc\n| project-away Relevance\n",
+        "query": "let apdexThreshhold = iff('{ApdexThresholdInMilliseconds}' == '', {AverageDuration}, toint('{ApdexThresholdInMilliseconds}'));\nlet failureThreshhold = 1;\n{Type}\n| where timestamp {TimeRange}\n| where name in ({Operations}) or '*' in ({Operations})\n| extend success = columnifexists('success', true)\n| extend Failure = iff('{Calculations}' == 'ConsiderFailures' and success == false, 1, 0)\n| summarize AverageDuration = avg(duration), Failures = sum(Failure) by user_Id, name\n| extend UserExperience = case(AverageDuration <= apdexThreshhold, 'S', AverageDuration <= 4 * apdexThreshhold, 'T', 'F')\n| extend UserExperience = case(Failures >= failureThreshhold, \"F\", UserExperience)\n| summarize count() by UserExperience, name\n| summarize Satisfied = sumif(count_, UserExperience == 'S'), Tolerating = sumif(count_, UserExperience == 'T'), Frustrated = sumif(count_, UserExperience == 'F'), Total = sum(count_) by name\n| extend ApdexScore = (Satisfied + (Tolerating / 2.0)) / Total\n| extend Relevance = iff(ApdexScore == 0, 1.0 * Total * Total, Total / ApdexScore)\n| order by {SortBy}, name asc\n| project-away Relevance\n",
         "showQuery": false,
         "size": 1,
         "aggregation": 0,
