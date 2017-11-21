@@ -4,7 +4,7 @@
     {
       "type": 1,
       "content": {
-        "json": "# Active Users\n\nHow many users does your app have? And how engaged are they? This workbook analyzes:\n* Daily, weekly, and monthly active user counts\n* Stickiness rates, which are useful indicators for how engaging your users find your app.\n"
+        "json": "# Active Users\n\nHow many users does your app have? And how engaged are they? This workbook analyzes:\n* Daily, weekly, and monthly active user counts"
       }
     },
     {
@@ -24,21 +24,25 @@
             "value": "'*'"
           },
           {
-            "id": "36af7e49-a2ee-44fa-b91a-4de2e932abcd",
+            "id": "b911209e-14fc-4e33-b62a-f029f213ac2a",
             "version": "KqlParameterItem/1.0",
             "name": "TimeRange",
-            "type": 1,
-            "description": "Time range to see in the charts",
+            "type": 2,
+            "description": null,
             "isRequired": true,
+            "multiSelect": null,
+            "query": "datatable(key:string, display:string) \r\n[ \r\n\"7d\", \"Last 7 days\", \r\n\"14d\", \"Last 14 days\", \r\n\"30d\", \"Last 30 days\", \r\n\"60d\", \"Last 60 days\", \r\n\"90d\", \"Last 90 days\"\r\n] ",
             "value": "30d"
           },
           {
             "id": "0895f8b5-90e5-461f-985c-4683bc9e08af",
             "version": "KqlParameterItem/1.0",
             "name": "MonthDefinition",
-            "type": 1,
+            "type": 2,
             "description": null,
             "isRequired": true,
+            "multiSelect": null,
+            "query": "datatable(key:string, display:string) \r\n[ \r\n\"28d\", \"28 days\", \r\n\"30d\", \"30 days\" \r\n] ",
             "value": "28d"
           }
         ]
@@ -54,25 +58,47 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "union customEvents, pageViews\r\n| where timestamp >= ago({TimeRange})\r\n// If you want to count just the users of specific events, uncomment the next line and add in your event names\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, ago({TimeRange}), now(), 1d, 7d)\r\n| project timestamp, DAU=dcount_activities_inner\r\n| render timechart ",
+        "query": "union customEvents, pageViews\r\n| where timestamp >= startofday(ago({TimeRange}))\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, ago({TimeRange}), now(), 1d, 1d)\r\n| project timestamp, DAU=dcount_activities_inner\r\n| render timechart ",
         "showQuery": false,
         "size": 0,
+        "aggregation": 5,
+        "showAnnotations": false,
         "visualization": "timechart"
       }
     },
     {
       "type": 1,
       "content": {
-        "json": "## Monthly Active Users (MAU)\nMAU counts how many users used your app at least once in the previous 30 days. To customize what custom events and page views qualify as \"active usage,\" edit the `Activities` parameter above."
+        "json": "## Weekly Active Users (WAU)\nMAU counts how many users used your app at least once in the previous 7 days. To customize what custom events and page views qualify as \"active usage,\" edit the `Activities` parameter above."
       }
     },
     {
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let month = {MonthDefinition};\r\nlet outerWindow = now() - {TimeRange} - month;\r\nunion customEvents, pageViews\r\n| where timestamp >= outerWindow\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, outerWindow, now(), 1d, month)\r\n| project timestamp, MAU=dcount_activities_outer\r\n| where timestamp >= ago({TimeRange})\r\n| render timechart ",
+        "query": "let week = 7d;\r\nlet outerWindow = now() - {TimeRange} - week;\r\nunion customEvents, pageViews\r\n| where timestamp >= startofday(outerWindow)\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, outerWindow, now(), 1d, 7d)\r\n| project timestamp, WAU=dcount_activities_outer\r\n| where timestamp >= ago({TimeRange})\r\n| render timechart ",
         "showQuery": false,
         "size": 0,
+        "aggregation": 5,
+        "showAnnotations": false,
+        "visualization": "timechart"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Monthly Active Users (MAU)\nMAU counts how many users used your app at least once in the previous {MonthDefinition}. To customize what custom events and page views qualify as \"active usage,\" edit the `Activities` parameter above."
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let month = {MonthDefinition};\r\nlet outerWindow = now() - {TimeRange} - month;\r\nunion customEvents, pageViews\r\n| where timestamp >= startofday(outerWindow)\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, outerWindow, now(), 1d, month)\r\n| project timestamp, MAU=dcount_activities_outer\r\n| where timestamp >= ago({TimeRange})\r\n| render timechart ",
+        "showQuery": false,
+        "size": 0,
+        "aggregation": 5,
+        "showAnnotations": false,
         "visualization": "timechart"
       }
     },
@@ -86,41 +112,11 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let month = {MonthDefinition};\r\nlet outerWindow = now() - {TimeRange} - month;\r\nunion customEvents, pageViews\r\n| where timestamp >= outerWindow\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, outerWindow, now(), 1d, 30d)\r\n| project timestamp, MAU=activity_ratio * 100\r\n| where timestamp >= ago({TimeRange})\r\n| render timechart ",
+        "query": "let month = {MonthDefinition};\r\nlet outerWindow = now() - {TimeRange} - month;\r\nunion customEvents, pageViews\r\n| where timestamp >= startofday(outerWindow)\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, outerWindow, now(), 1d, month)\r\n| project timestamp, MAU=activity_ratio\r\n| where timestamp >= ago({TimeRange})\r\n| render timechart ",
         "showQuery": false,
         "size": 0,
-        "visualization": "timechart"
-      }
-    },
-    {
-      "type": 1,
-      "content": {
-        "json": "## Weekly Active Users (WAU)\n"
-      }
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "let week = 7d;\r\nlet outerWindow = now() - {TimeRange} - week;\r\nunion customEvents, pageViews\r\n| where timestamp >= outerWindow\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, outerWindow, now(), 1d, 7d)\r\n| project timestamp, WAU=dcount_activities_outer\r\n| where timestamp >= ago({TimeRange})\r\n| render timechart ",
-        "showQuery": false,
-        "size": 0,
-        "visualization": "timechart"
-      }
-    },
-    {
-      "type": 1,
-      "content": {
-        "json": "## Weekly Stickiness (DAU/WAU ratio)"
-      }
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "let week = 7d;\r\nlet outerWindow = now() - {TimeRange} - week;\r\nunion customEvents, pageViews\r\n| where timestamp >= outerWindow\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, outerWindow, now(), 1d, 7d)\r\n| project timestamp, MAU=activity_ratio * 100\r\n| where timestamp >= ago({TimeRange})\r\n| render timechart ",
-        "showQuery": false,
-        "size": 0,
+        "aggregation": 3,
+        "showAnnotations": false,
         "visualization": "timechart"
       }
     }
