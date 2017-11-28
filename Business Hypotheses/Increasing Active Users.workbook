@@ -67,7 +67,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let timeRange = {TimeRange};\r\nlet monthDefinition = {Metric};\r\nlet hlls = union customEvents, pageViews\r\n| where timestamp >= startofmonth(now() - timeRange - 2 * monthDefinition)\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| summarize Hlls = hll(user_Id) by bin(timestamp, 1d)\r\n| project DaysToMerge = timestamp, Hlls;\r\nrange d from 0d to timeRange step 1d\r\n| extend Day = startofday(now() - d)\r\n| extend R = range(0d, monthDefinition - 1d, 1d)\r\n| mvexpand R\r\n| extend DaysToMerge = Day - totimespan(R)\r\n| join kind= inner (hlls) on DaysToMerge \r\n| project Day, ThisMonthHlls = Hlls\r\n| summarize ThisMonth = hll_merge(ThisMonthHlls) by Day\r\n| project Day, [\"Monthly Active Users\"] = dcount_hll(ThisMonth) \r\n",
+        "query": "let timeRange = {TimeRange};\r\nlet monthDefinition = {Metric};\r\nlet hlls = union customEvents, pageViews\r\n| where timestamp >= startofmonth(now() - timeRange - monthDefinition)\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| summarize Hlls = hll(user_Id) by bin(timestamp, 1d)\r\n| project DaysToMerge = timestamp, Hlls;\r\nrange d from 0d to timeRange step 1d\r\n| extend Day = startofday(now() - d)\r\n| extend R = range(0d, monthDefinition - 1d, 1d)\r\n| mvexpand R\r\n| extend DaysToMerge = Day - totimespan(R)\r\n| join kind= inner (hlls) on DaysToMerge \r\n| project Day, ThisMonthHlls = Hlls\r\n| summarize ThisMonth = hll_merge(ThisMonthHlls) by Day\r\n| project Day, [\"Monthly Active Users\"] = dcount_hll(ThisMonth) \r\n",
         "showQuery": false,
         "size": 0,
         "aggregation": 5,
@@ -183,7 +183,7 @@
             "type": 1,
             "description": null,
             "isRequired": true,
-            "query": "let monthDefinition = {Metric};\r\nunion customEvents, pageViews\r\n| where timestamp >= startofday(now() - monthDefinition + 1d)\r\n| where name in ('*') or '*' in ('*')\r\n| summarize MAU=dcount(user_Id)\r\n| extend Goal = round(MAU * 1.1), lg = exp10(bin(log10(MAU), 1) - 1)\r\n| project AdjustedGoal = case(lg <= 0.1, round(MAU * 1.5), round(round(Goal / lg) * lg))"
+            "query": "let monthDefinition = {Metric};\r\nunion customEvents, pageViews\r\n| where timestamp >= startofday(now() - monthDefinition + 1d)\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| summarize MAU=dcount(user_Id)\r\n| extend Goal = round(MAU * 1.1), lg = exp10(bin(log10(MAU), 1) - 1)\r\n| project AdjustedGoal = case(lg <= 0.1, round(MAU * 1.5), round(round(Goal / lg) * lg))"
           }
         ]
       }
