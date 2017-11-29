@@ -27,17 +27,6 @@
         "crossComponentResources": [],
         "parameters": [
           {
-            "id": "7813b809-0b92-4531-ad05-90add0674de0",
-            "version": "KqlParameterItem/1.0",
-            "name": "TimeRange",
-            "type": 2,
-            "description": null,
-            "isRequired": true,
-            "multiSelect": null,
-            "query": "datatable(key:string, display:string) \r\n[ \r\n\"7d\", \"Last 7 days\", \r\n\"14d\", \"Last 14 days\", \r\n\"30d\", \"Last 30 days\", \r\n] ",
-            "value": "30d"
-          },
-          {
             "id": "e552c6ce-183d-4b5d-8405-d60313b3eb8e",
             "version": "KqlParameterItem/1.0",
             "name": "Activities",
@@ -47,7 +36,7 @@
             "multiSelect": true,
             "quote": "'",
             "delimiter": ",",
-            "query": "union customEvents, pageViews\r\n| where timestamp >= ago({TimeRange})\r\n| summarize count() by name\r\n| order by count_ desc\r\n| project Id=name, Title=name, Selected=false\r\n| union (\r\ndatatable(Id:string, Title:string, Selected:boolean)[\r\n'*', 'All Events and Page Views', true\r\n]\r\n)"
+            "query": "union customEvents, pageViews\r\n| where timestamp >= ago(7d)\r\n| summarize count() by name\r\n| order by count_ desc\r\n| project Id=name, Title=name, Selected=false\r\n| union (\r\ndatatable(Id:string, Title:string, Selected:boolean)[\r\n'*', 'All Events and Page Views', true\r\n]\r\n)"
           },
           {
             "id": "68b8c1f5-9f24-401a-bea4-9739a7438069",
@@ -59,6 +48,17 @@
             "multiSelect": null,
             "query": "datatable(key:string, display:string) \r\n[ \r\n\"1d\", \"Day over Day\", \r\n\"7d\", \"Week over Week\", \r\n\"28d\", \"Month over Month (28 days)\", \r\n\"30d\", \"Month over Month (30 days)\"\r\n] ",
             "value": "28d"
+          },
+          {
+            "id": "7813b809-0b92-4531-ad05-90add0674de0",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 2,
+            "description": null,
+            "isRequired": true,
+            "multiSelect": null,
+            "query": "datatable(key:string, display:string) \r\n[ \r\n\"7d\", \"Last 7 days\", \r\n\"14d\", \"Last 14 days\", \r\n\"30d\", \"Last 30 days\", \r\n] ",
+            "value": "30d"
           }
         ]
       }
@@ -98,7 +98,7 @@
             "multiSelect": true,
             "quote": "'",
             "delimiter": ",",
-            "query": "union customEvents, pageViews\r\n| where timestamp >= ago(1d)\r\n| summarize count() by name\r\n| order by count_ desc\r\n| project Id=name, Title=name, Selected=false\r\n| union (\r\ndatatable(Id:string, Title:string, Selected:boolean)[\r\n'*', 'All Events and Page Views', true\r\n]\r\n)"
+            "query": "union customEvents, pageViews\r\n| where timestamp >= ago(7d)\r\n| summarize count() by name\r\n| order by count_ desc\r\n| project Id=name, Title=name, Selected=false\r\n| union (\r\ndatatable(Id:string, Title:string, Selected:boolean)[\r\n'*', 'All Events and Page Views', true\r\n]\r\n)"
           }
         ]
       }
