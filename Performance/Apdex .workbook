@@ -4,7 +4,7 @@
     {
       "type": 1,
       "content": {
-        "json": "# Measure Performance with Apdex\n\n[Apdex (Application Performance Index)](http://apdex.org/overview.html) is an open standard method for measuring application performance. It contextualizes your application's performance in terms of the quality of experience you provide to your users.\n\nApdex classifies performance into three zones based on a baseline performance threshold T you define for your app:\n\n| Zone | Minimum Response Time | Maximum Response Time |\n| --- |: --- |: --- |: --- |\n| **Satisfied** | 0 seconds | T seconds |\n| **Tolerating** | T seconds | 4T seconds |\n| **Frustrated** | 4T seconds | - |\n\n\n"
+        "json": "# Measure Performance with Apdex\n\n[Apdex (Application Performance Index)](http://apdex.org/overview.html) is an open standard method for measuring application performance. It contextualizes your application's performance in terms of the quality of experience you provide to your users.\n\nApdex classifies performance into three zones based on a baseline performance threshold T you define for your app:\n\n| Zone | Minimum Response Time | Maximum Response Time |\n| --- |: --- |: --- |: --- |\n| Satisfied | 0 seconds | T seconds |\n| Tolerating | T seconds | 4T seconds |\n| Frustrated | 4T seconds | - |\n\n\n"
       }
     },
     {
@@ -79,7 +79,25 @@
     {
       "type": 1,
       "content": {
-        "json": "## Daily Apdex Score\n"
+        "json": "# Apdex Score\n"
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let apdexThreshhold = toint('{ApdexThresholdInMilliseconds}');\nlet apdexData = {Type}\n| where timestamp {TimeRange}\n| where name in ({Operations}) or '*' in ({Operations})\n| extend success = columnifexists('success', true)\n| extend Failure = iff('{Calculations}' == 'ConsiderFailures' and success == false, 1, 0)\n| summarize AverageDuration = avg(duration), Failures = sum(Failure) by user_Id\n| extend UserExperience = case(AverageDuration <= apdexThreshhold, 'Satisfied', AverageDuration <= 4 * apdexThreshhold, 'Tolerating', 'Frustrated')\n| extend UserExperience = case(Failures > 0, \"Frustrated\", UserExperience)\n| summarize Satisfied = countif(UserExperience == 'Satisfied'), Tolerating = countif(UserExperience == 'Tolerating'), Frustrated = countif(UserExperience == 'Frustrated'), Total = count()\n| project InterestingDimension = '1', [\"Satisfied Users\"] = Satisfied, [\"Tolerating Users\"] = Tolerating, [\"Frustrated Users\"] = Frustrated, [\"Apdex Score\"] = (Satisfied + (Tolerating / 2.0)) / Total;\nlet max = toscalar(apdexData\n| summarize S = max([\"Satisfied Users\"]), T = max([\"Tolerating Users\"]), F = max([\"Frustrated Users\"] )\n| project max = iff(S > T, iff(S > F, S, F), iff(T > F, T, F)));\nlet GetEmojiBars = (T:(InterestingDimension:string, Users:long), MaxUsers:long, emoji:string) {\n    T    \n    | extend charArray = range(1, tolong(round(1.0 * 10 * Users / MaxUsers)), 1)\n    | extend c = emoji\n    | mvexpand charArray\n    | summarize EmojiBar = tostring(makelist(c)) by InterestingDimension, Users\n    | extend EmojiBar = replace('\"', '', EmojiBar)\n    | extend EmojiBar = replace(',', '', EmojiBar)\n    | extend EmojiBar = replace(@'\\[', '', EmojiBar)\n    | extend EmojiBar = replace(@'\\]', '', EmojiBar)\n    | project InterestingDimension, EmojiBar\n};\napdexData\n| join kind = inner (GetEmojiBars((apdexData | project InterestingDimension, Users = [\"Satisfied Users\"]), max, \"💚\")) on InterestingDimension \n    | project-rename  [\"Satisfied\"] = EmojiBar \n    | project-away InterestingDimension1\n| join kind = inner (GetEmojiBars((apdexData | project InterestingDimension, Users = [\"Tolerating Users\"]), max, \"💛\")) on InterestingDimension \n    | project-rename  [\"Tolerating\"] = EmojiBar \n    | project-away InterestingDimension1\n| join kind = inner (GetEmojiBars((apdexData | project InterestingDimension, Users = [\"Frustrated Users\"]), max, \"❤️\")) on InterestingDimension \n    | project-rename  [\"Frustrated\"] = EmojiBar \n    | project-away InterestingDimension1\n| project [\"Satisfied Users\"], Satisfied, [\"Tolerating Users\"], Tolerating, [\"Frustrated Users\"], Frustrated, [\"Apdex Score\"] = round([\"Apdex Score\"], 3)\n| extend [\"Apdex Interpretation\"] = case([\"Apdex Score\"] <= 0.5, '⛔ Unacceptable', [\"Apdex Score\"] <= 0.7, '⚠️ Poor', [\"Apdex Score\"] <= 0.85, '⚠️ Fair', [\"Apdex Score\"] <= 0.94, '✔️ Good', '✔️ Excellent')",
+        "showQuery": false,
+        "size": 0,
+        "aggregation": 0,
+        "showAnnotations": false,
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "# Daily Apdex Score"
       }
     },
     {
@@ -92,30 +110,6 @@
         "aggregation": 5,
         "showAnnotations": false,
         "visualization": "timechart"
-      }
-    },
-    {
-      "type": 1,
-      "content": {
-        "json": "### Interpreting the Apdex Score\n\n| Score | Interpretation | \n| --- |: --- |: --- |\n| 0 - 0.5 | Unacceptable |\n| 0.5 - 0.7 | Poor |\n| 0.7 - 0.85 | Fair |\n| 0.85 - 0.94 | Good |\n| 0.94 - 1.00 | Excellent |"
-      }
-    },
-    {
-      "type": 1,
-      "content": {
-        "json": "## Apdex for the entire time range"
-      }
-    },
-    {
-      "type": 3,
-      "content": {
-        "version": "KqlItem/1.0",
-        "query": "let apdexThreshhold = toint('{ApdexThresholdInMilliseconds}');\n{Type}\n| where timestamp {TimeRange}\n| where name in ({Operations}) or '*' in ({Operations})\n| extend success = columnifexists('success', true)\n| extend Failure = iff('{Calculations}' == 'ConsiderFailures' and success == false, 1, 0)\n| summarize AverageDuration = avg(duration), Failures = sum(Failure) by user_Id\n| extend UserExperience = case(AverageDuration <= apdexThreshhold, 'Satisfied', AverageDuration <= 4 * apdexThreshhold, 'Tolerating', 'Frustrated')\n| extend UserExperience = case(Failures > 0, \"Frustrated\", UserExperience)\n| summarize Satisfied = countif(UserExperience == 'Satisfied'), Tolerating = countif(UserExperience == 'Tolerating'), Frustrated = countif(UserExperience == 'Frustrated'), Total = count()\n| project [\"Satisfied Users\"] = Satisfied, [\"Tolerating Users\"] = Tolerating, [\"Frustrated Users\"] = Frustrated, [\" Apdex Score\"] = (Satisfied + (Tolerating / 2.0)) / Total\n",
-        "showQuery": false,
-        "size": 0,
-        "aggregation": 0,
-        "showAnnotations": false,
-        "visualization": "table"
       }
     },
     {
@@ -167,7 +161,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let apdexThreshhold = toint('{ApdexThresholdInMilliseconds}');\nlet failureThreshhold = 1;\n{Type}\n| where timestamp {TimeRange}\n| where name in ({Operations}) or '*' in ({Operations})\n| extend success = columnifexists('success', true)\n| extend Failure = iff('{Calculations}' == 'ConsiderFailures' and success == false, 1, 0)\n| summarize AverageDuration = avg(duration), Failures = sum(Failure) by user_Id, name\n| extend UserExperience = case(AverageDuration <= apdexThreshhold, 'S', AverageDuration <= 4 * apdexThreshhold, 'T', 'F')\n| extend UserExperience = case(Failures >= failureThreshhold, \"F\", UserExperience)\n| summarize count() by UserExperience, name\n| summarize Satisfied = sumif(count_, UserExperience == 'S'), Tolerating = sumif(count_, UserExperience == 'T'), Frustrated = sumif(count_, UserExperience == 'F'), Total = sum(count_) by name\n| extend ApdexScore = (Satisfied + (Tolerating / 2.0)) / Total\n| extend Relevance = iff(ApdexScore == 0, 1.0 * Total * Total, Total / ApdexScore)\n| order by {SortBy}, name asc\n| project-away Relevance\n",
+        "query": "let apdexThreshhold = toint('{ApdexThresholdInMilliseconds}');\nlet failureThreshhold = 1;\n{Type}\n| where timestamp {TimeRange}\n| where name in ({Operations}) or '*' in ({Operations})\n| extend success = columnifexists('success', true)\n| extend Failure = iff('{Calculations}' == 'ConsiderFailures' and success == false, 1, 0)\n| summarize AverageDuration = avg(duration), Failures = sum(Failure) by user_Id, name\n| extend UserExperience = case(AverageDuration <= apdexThreshhold, 'S', AverageDuration <= 4 * apdexThreshhold, 'T', 'F')\n| extend UserExperience = case(Failures >= failureThreshhold, \"F\", UserExperience)\n| summarize count() by UserExperience, name\n| summarize Satisfied = sumif(count_, UserExperience == 'S'), Tolerating = sumif(count_, UserExperience == 'T'), Frustrated = sumif(count_, UserExperience == 'F'), Total = sum(count_) by name\n| extend [\"Apdex Score\"] = round((Satisfied + (Tolerating / 2.0)) / Total, 3)\n| extend Relevance = iff([\"Apdex Score\"] == 0, 1.0 * Total * Total, Total / [\"Apdex Score\"])\n| order by {SortBy}, name asc\n| project-away Relevance\n| extend [\"Apdex Interpretation\"] = case([\"Apdex Score\"] <= 0.5, '⛔ Unacceptable', [\"Apdex Score\"] <= 0.7, '⚠️ Poor', [\"Apdex Score\"] <= 0.85, '⚠️ Fair', [\"Apdex Score\"] <= 0.94, '✔️ Good', '✔️ Excellent')\n",
         "showQuery": false,
         "size": 1,
         "aggregation": 0,
