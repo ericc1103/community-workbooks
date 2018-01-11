@@ -50,7 +50,8 @@
           {
             "name": "CohortingFilters",
             "id": "94bacf68-78db-4755-8a40-c2702dea4018",
-            "type": 1
+            "type": 1,
+            "value": ""
           },
           {
             "id": "6cb4afed-7dac-4608-892b-154f4943ddb6",
@@ -64,9 +65,12 @@
             "query": "union customEvents, pageViews\n| where timestamp >= ago(7d)\n| summarize count() by name\n| order by count_ desc\n| project Id=name, Title=name, Selected=false\n| union (\ndatatable(Id:string, Title:string, Selected:boolean)[\n'#', 'Same as cohorting activities', true,\n'*', 'All Events and Page Views', false\n]\n)"
           },
           {
-            "name": "RetainingFilters",
             "id": "0cc5211a-557e-4648-9569-1236bf16559f",
-            "type": 1
+            "version": "KqlParameterItem/1.0",
+            "name": "RetainingFilters",
+            "type": 1,
+            "isRequired": false,
+            "query": "datatable(x:int)[ 1 ]\r\n| extend retainingFilter = iff({RetainingActivities} == '#', '{CohortingFilters}', '')\r\n| project retainingFilter"
           }
         ]
       }
