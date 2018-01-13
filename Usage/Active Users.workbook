@@ -61,7 +61,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let start = startofday(ago({TimeRange} + {Metric}));\r\nunion customEvents, pageViews\r\n| where timestamp >= start\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, start, now(), 1d, {Metric})\r\n| where timestamp >= startofday(ago({TimeRange}))\r\n| project timestamp, DAU=dcount_activities_outer\r\n| render timechart ",
+        "query": "let start = startofday(ago({TimeRange} + {Metric}));\r\nunion customEvents, pageViews\r\n| where timestamp >= start\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, start, now(), 1d, {Metric})\r\n| where timestamp >= startofday(ago({TimeRange}))\r\n| project timestamp, [\"Active User\"] = dcount_activities_outer\r\n| render timechart ",
         "showQuery": false,
         "size": 0,
         "aggregation": 5,
