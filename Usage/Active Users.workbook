@@ -125,6 +125,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
+        "query": "let outerWindow = now() - {TimeRange} - {Metric};\r\nunion customEvents, pageViews\r\n| where timestamp >= startofday(outerWindow)\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n{OtherFilters}\r\n| evaluate activity_engagement(user_Id, timestamp, outerWindow, now(), 1d, {Metric})\r\n| project timestamp, [\"Stickiness\"] = activity_ratio\r\n| where timestamp >= ago({TimeRange})\r\n| render timechart ",
         "showQuery": false,
         "size": 0,
         "aggregation": 5,
