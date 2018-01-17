@@ -15,6 +15,17 @@
         "crossComponentResources": [],
         "parameters": [
           {
+            "id": "593d7ebe-107d-4823-87dd-d020d2138611",
+            "version": "KqlParameterItem/1.0",
+            "name": "Metric",
+            "type": 2,
+            "description": null,
+            "isRequired": true,
+            "multiSelect": null,
+            "query": "datatable(val: string, text: string)[\r\n'1d', 'Daily Active Users',\r\n'7d', 'Weekly Active Users',\r\n'28d', 'Monthly Active Users (28d)',\r\n'30d', 'Monthly Active Users (30d)',\r\n]",
+            "value": "28d"
+          },
+          {
             "id": "25a6fdc1-ae28-4886-9a5c-90254deb6a3d",
             "version": "KqlParameterItem/1.0",
             "name": "Activities",
@@ -27,15 +38,12 @@
             "query": "union customEvents, pageViews\n| where timestamp >= ago(7d)\n| summarize count() by name\n| order by count_ desc\n| project Id=name, Title=name, Selected=false\n| union (\ndatatable(Id:string, Title:string, Selected:boolean)[\n'*', 'All Events and Page Views', true\n]\n)"
           },
           {
-            "id": "593d7ebe-107d-4823-87dd-d020d2138611",
+            "id": "79126a9c-4ec6-4719-872a-f4a9b022e8f9",
             "version": "KqlParameterItem/1.0",
-            "name": "Metric",
-            "type": 2,
-            "description": null,
-            "isRequired": true,
-            "multiSelect": null,
-            "query": "datatable(val: string, text: string)[\r\n'1d', 'Daily Active Users',\r\n'7d', 'Weekly Active Users',\r\n'28d', 'Monthly Active Users (28d)',\r\n'30d', 'Monthly Active Users (30d)',\r\n]",
-            "value": "28d"
+            "name": "OtherFilters",
+            "type": 1,
+            "description": "A KQL snippet that further filters the activities. Example: | where application_Version == '1.0'",
+            "isRequired": false
           },
           {
             "id": "b911209e-14fc-4e33-b62a-f029f213ac2a",
@@ -61,7 +69,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let start = startofday(ago({TimeRange} + {Metric}));\r\nunion customEvents, pageViews\r\n| where timestamp >= start\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, start, now(), 1d, {Metric})\r\n| where timestamp >= startofday(ago({TimeRange}))\r\n| project timestamp, [\"Active User\"] = dcount_activities_outer\r\n| render timechart ",
+        "query": "let start = startofday(ago({TimeRange} + {Metric}));\r\nunion customEvents, pageViews\r\n| where timestamp >= start\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n{OtherFilters}\r\n| evaluate activity_engagement(user_Id, timestamp, start, now(), 1d, {Metric})\r\n| where timestamp >= startofday(ago({TimeRange}))\r\n| project timestamp, [\"Active User\"] = dcount_activities_outer\r\n| render timechart ",
         "showQuery": false,
         "size": 0,
         "aggregation": 5,
@@ -99,7 +107,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let start = startofday(ago({TimeRange} + {Metric}));\r\nunion customEvents, pageViews\r\n| where timestamp >= start\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, start, now(), 1d, {Metric})\r\n| where timestamp >= startofday(ago({TimeRange}))\r\n| project timestamp, Users=dcount_activities_outer\r\n| where timestamp == startofday(ago({TimeRange})) or timestamp == startofday(now() - 1d)\r\n| summarize (LastDay, LastDayUsers) = argmax(timestamp, Users), (FirstDay, FirstDayUsers) = argmin(timestamp, Users)\r\n| extend SimpleGrowth = 100.0 * (LastDayUsers - FirstDayUsers) / (FirstDayUsers * (1.0 * (LastDay - FirstDay) / {Show}))\r\n| extend CompoundGrowth = 100.0 * (pow(1.0 * LastDayUsers / FirstDayUsers, 1.0 / ((LastDay - FirstDay) / {Show})) - 1)\r\n| project [\"Users at the Begining\"] = FirstDayUsers, [\"Users at the End\"] = LastDayUsers, [\"# of Periods\"] = round(1.0 * (LastDay - FirstDay) / {Metric}, 1), [\"Growth Rate (%)\"] = round(SimpleGrowth, 2), [\"Compounded Growth Rate (%)\"] = round(CompoundGrowth, 2)",
+        "query": "let start = startofday(ago({TimeRange} + {Metric}));\r\nunion customEvents, pageViews\r\n| where timestamp >= start\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n{OtherFilters}\r\n| evaluate activity_engagement(user_Id, timestamp, start, now(), 1d, {Metric})\r\n| where timestamp >= startofday(ago({TimeRange}))\r\n| project timestamp, Users=dcount_activities_outer\r\n| where timestamp == startofday(ago({TimeRange})) or timestamp == startofday(now() - 1d)\r\n| summarize (LastDay, LastDayUsers) = argmax(timestamp, Users), (FirstDay, FirstDayUsers) = argmin(timestamp, Users)\r\n| extend SimpleGrowth = 100.0 * (LastDayUsers - FirstDayUsers) / (FirstDayUsers * (1.0 * (LastDay - FirstDay) / {Show}))\r\n| extend CompoundGrowth = 100.0 * (pow(1.0 * LastDayUsers / FirstDayUsers, 1.0 / ((LastDay - FirstDay) / {Show})) - 1)\r\n| project [\"Users at the Begining\"] = FirstDayUsers, [\"Users at the End\"] = LastDayUsers, [\"# of Periods\"] = round(1.0 * (LastDay - FirstDay) / {Metric}, 1), [\"Growth Rate (%)\"] = round(SimpleGrowth, 2), [\"Compounded Growth Rate (%)\"] = round(CompoundGrowth, 2)",
         "showQuery": false,
         "size": 0,
         "aggregation": 5,
@@ -117,7 +125,6 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let outerWindow = now() - {TimeRange} - {Metric};\r\nunion customEvents, pageViews\r\n| where timestamp >= startofday(outerWindow)\r\n| where name in ({Activities}) or '*' in ({Activities})\r\n| evaluate activity_engagement(user_Id, timestamp, outerWindow, now(), 1d, {Metric})\r\n| project timestamp, [\"Stickiness\"] = activity_ratio\r\n| where timestamp >= ago({TimeRange})\r\n| render timechart ",
         "showQuery": false,
         "size": 0,
         "aggregation": 5,
