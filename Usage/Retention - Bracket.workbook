@@ -1,17 +1,22 @@
 {
   "version": "Notebook/1.0",
+  "isLocked": false,
   "items": [
     {
       "type": 1,
       "content": {
         "json": "# Bracket Retention\n---\n\nBracket retention measures how many of your users come back to perform one of the `RetainingActivities` in a particular period after they perform one of the `CohortingActivities` in your app. For instance, you could be measuring the number of users who returned to use your app one week from day from the day they first downloaded it. Seeing the retention trend for days 7-13 will give you an indication of the stickiness of your app. \n\nBracket retention is similar to N-period retention, except that the retention time ranges or buckets are not fixed. You are free to choose any time bucket that makes sense for your app. This gives app owners a lot more flexibility in analyzing their user retention.\n\nBracket retention is well-suited for gaming apps, or other kinds of app where you are trying to get users to develop a daily habit."
-      }
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
     },
     {
       "type": 1,
       "content": {
-        "json": "### Activity Selection\nUse these fields to set events that that correspond to interesting user activities. The `Understanding Retention Parameter` section at the bottom describes these parameters in detail."
-      }
+        "json": "## Activity Selection\nUse these fields to set events that that correspond to interesting user activities. The `Understanding Retention Parameter` section at the bottom describes these parameters in detail."
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
     },
     {
       "type": 9,
@@ -62,13 +67,17 @@
             "query": "datatable(x:int)[ 1 ]\r\n| extend retainingFilter = iff({RetainingActivities} == '#', '{CohortingFilters}', '')\r\n| project retainingFilter"
           }
         ]
-      }
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
     },
     {
       "type": 1,
       "content": {
-        "json": "### Retention Parameters\nUse these fields to customize your retention settings. "
-      }
+        "json": "## Retention Parameters\nUse these fields to customize your retention settings. "
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
     },
     {
       "type": 9,
@@ -118,13 +127,17 @@
             "query": "datatable(x:string)['{SelectBrackets}']"
           }
         ]
-      }
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
     },
     {
       "type": 1,
       "content": {
-        "json": "# Bracket Retention Table\n"
-      }
+        "json": "## Bracket Retention Table\n"
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
     },
     {
       "type": 3,
@@ -136,13 +149,25 @@
         "aggregation": 0,
         "showAnnotations": false,
         "visualization": "table"
-      }
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
     },
     {
       "type": 1,
       "content": {
-        "json": "# Understanding the Retention Parameters\n| Parameter | Used for |\n| ----- | ----- |\n| Retention Period | The period to use in retention calculation. Can be Daily, Weekly or Monthly |\n| Cohorts To Analyze  | The number of cohorts to analyze. This corresponds to the N in N-period retention |\n| Cohorting Activities  | The activities that selects a cohort of users. Example: Users who used event *Read Product Review* (cohorting activity). |\n| Retaining Activities  | The activities that indicates retention of a cohorted user selected above. Example: Users who used event *Read Product Review* (cohorting activity) and returned to use *Purchase Product* (retaining activity). |\n| Cohorting/Retaining Filters  | An analytics query snippet to further filter the cohorting activity. Example: *&#124; where application_Version = '1.0'* |\n| SelectBrackets | Some example time brackets to get your started with |\n| CustomBrackets | Use this field to set custom time brackets that make sense for your app. It contains is a comma seperated list of timespans that correspond to bracket boundaries. |\n"
-      }
+        "json": "## Understanding the Retention Parameters\n| Parameter | Used for |\n| ----- | ----- |\n| Retention Period | The period to use in retention calculation. Can be Daily, Weekly or Monthly |\n| Cohorts To Analyze  | The number of cohorts to analyze. This corresponds to the N in N-period retention |\n| Cohorting Activities  | The activities that selects a cohort of users. Example: Users who used event *Read Product Review* (cohorting activity). |\n| Retaining Activities  | The activities that indicates retention of a cohorted user selected above. Example: Users who used event *Read Product Review* (cohorting activity) and returned to use *Purchase Product* (retaining activity). |\n| Cohorting/Retaining Filters  | An analytics query snippet to further filter the cohorting activity. Example: *&#124; where application_Version = '1.0'* |\n| SelectBrackets | Some example time brackets to get your started with |\n| CustomBrackets | Use this field to set custom time brackets that make sense for your app. It contains is a comma seperated list of timespans that correspond to bracket boundaries. |\n"
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Related Workbook Templates\n* Retention - N-Period\n* Retention - Unbounded\n* Cohort Analysis"
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
     }
   ]
 }

@@ -1,11 +1,22 @@
 {
   "version": "Notebook/1.0",
+  "isLocked": false,
   "items": [
     {
       "type": 1,
       "content": {
         "json": "# N-Period Retention\n\nN-period retention measures how many of your users come back to perform one of the `RetainingActivities` in a particular period after they perform one of the `CohortingActivities` in your app. For instance, you could be measuring the number of users who returned to use your app on the 10th day from the day they first downloaded it. Seeing the retention trend for days 1-10 will give you an indication of the stickiness of your app. \n\nN-day retention is well-suited for gaming apps, or other kinds of app where you are trying to get users to develop a daily habit."
-      }
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Activity Selection\nUse these fields to set events that that correspond to interesting user activities. The `Understanding Retention Parameter` section at the bottom describes these parameters in detail."
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
     },
     {
       "type": 9,
@@ -14,26 +25,6 @@
         "query": "",
         "crossComponentResources": [],
         "parameters": [
-          {
-            "id": "e62098ae-ac3f-4800-8e62-3e7d9a052e56",
-            "version": "KqlParameterItem/1.0",
-            "name": "RetentionPeriod",
-            "type": 2,
-            "description": "1d: Daily, 7d: Weekly, 30/28d: Monthly",
-            "isRequired": true,
-            "multiSelect": null,
-            "query": "datatable(id:string, text:string)[\n'1d', 'Daily',\n'7d', 'Weekly',\n'28d', 'Monthly (28 days)', \n'30d', 'Monthly (30 days)'\n]",
-            "value": "7d"
-          },
-          {
-            "id": "fa4b29d9-bfc1-46e3-98f1-3cba05afbea3",
-            "version": "KqlParameterItem/1.0",
-            "name": "CohortsToAnalyze",
-            "type": 1,
-            "description": "Number of cohort periods to analyze",
-            "isRequired": true,
-            "value": "6"
-          },
           {
             "id": "97ae2ae5-ec95-455b-bac2-36caf2db61db",
             "version": "KqlParameterItem/1.0",
@@ -71,13 +62,49 @@
             "query": "datatable(x:int)[ 1 ]\r\n| extend retainingFilter = iff({RetainingActivities} == '#', '{CohortingFilters}', '')\r\n| project retainingFilter"
           }
         ]
-      }
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
     },
     {
       "type": 1,
       "content": {
-        "json": "| Parameter | Used for |\n| ----- | ----- |\n| Retention Period | The period to use in retention calculation. Can be Daily, Weekly or Monthly |\n| Cohorts To Analyze  | The number of cohorts to analyze. This corresponds to the N in N-period retention |\n| Cohorting Activities  | The activities that selects a cohort of users. Example: Users who used event *Read Product Review* (cohorting activity). |\n| Retaining Activities  | The activities that indicates retention of a cohorted user selected above. Example: Users who used event *Read Product Review* (cohorting activity) and returned to use *Purchase Product* (retaining activity). |\n| Cohorting/Retaining Filters  | An analytics query snippet to further filter the cohorting activity. Example: *&#124; where application_Version = '1.0'* |\n"
-      }
+        "json": "## Retention Parameters\nUse these fields to customize your retention settings. "
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "query": "",
+        "crossComponentResources": [],
+        "parameters": [
+          {
+            "id": "e62098ae-ac3f-4800-8e62-3e7d9a052e56",
+            "version": "KqlParameterItem/1.0",
+            "name": "RetentionPeriod",
+            "type": 2,
+            "description": "1d: Daily, 7d: Weekly, 30/28d: Monthly",
+            "isRequired": true,
+            "multiSelect": null,
+            "query": "datatable(id:string, text:string)[\n'1d', 'Daily',\n'7d', 'Weekly',\n'28d', 'Monthly (28 days)', \n'30d', 'Monthly (30 days)'\n]",
+            "value": "7d"
+          },
+          {
+            "id": "fa4b29d9-bfc1-46e3-98f1-3cba05afbea3",
+            "version": "KqlParameterItem/1.0",
+            "name": "CohortsToAnalyze",
+            "type": 1,
+            "description": "Number of cohort periods to analyze",
+            "isRequired": true,
+            "value": "6"
+          }
+        ]
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
     },
     {
       "type": 3,
@@ -88,7 +115,25 @@
         "size": 0,
         "aggregation": 0,
         "showAnnotations": false
-      }
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Understanding Retention Parameters\n| Parameter | Used for |\n| ----- | ----- |\n| Retention Period | The period to use in retention calculation. Can be Daily, Weekly or Monthly |\n| Cohorts To Analyze  | The number of cohorts to analyze. This corresponds to the N in N-period retention |\n| Cohorting Activities  | The activities that selects a cohort of users. Example: Users who used event *Read Product Review* (cohorting activity). |\n| Retaining Activities  | The activities that indicates retention of a cohorted user selected above. Example: Users who used event *Read Product Review* (cohorting activity) and returned to use *Purchase Product* (retaining activity). |\n| Cohorting/Retaining Filters  | An analytics query snippet to further filter the cohorting activity. Example: *&#124; where application_Version = '1.0'* |\n"
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Related Workbook Templates\n* Retention - Bracket\n* Retention - Unbounded\n* Cohort Analysis"
+      },
+      "conditionalVisibility": null,
+      "halfWidth": false
     }
   ]
 }
